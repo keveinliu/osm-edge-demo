@@ -1,0 +1,16 @@
+ARG GO_VERSION
+FROM --platform=$BUILDPLATFORM golang:$GO_VERSION AS builder
+ARG TARGETOS
+ARG TARGETARCH
+ARG BINARY
+
+WORKDIR /osm
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOPROXY=https://goproxy.cn go build -v ./demo/cmd/$BINARY
+
+FROM alpine:3.11.3 AS final-linux
+FROM final-linux
+ARG BINARY
+COPY --from=builder /osm/$BINARY* /
