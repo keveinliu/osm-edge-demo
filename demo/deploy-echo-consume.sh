@@ -77,8 +77,8 @@ spec:
               protocol: TCP
             - containerPort: 8080
               protocol: TCP
-          command: ["/bin/sleep"]
-          args: ["--server", "echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001"]
+          command: ["/echo-consumer"]
+          args: ["-server", "echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}
@@ -106,7 +106,7 @@ spec:
                   fieldPath: spec.serviceAccountName
             - name: APP_LOG_CONF_FILE
               value: "/config/log.yml"
-            - name: CONF_PROVIDER_FILE_PATH
+            - name: CONF_CONSUMER_FILE_PATH
               value: "/config/client.yml"
       imagePullSecrets:
         - name: $CTR_REGISTRY_CREDS_NAME

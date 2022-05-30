@@ -78,6 +78,8 @@ build-echo-grpc-server:
 	rm -rf bin/echo-dubbo-server
 	go build -v -o bin/echo-grpc-server ${LDFLAGS} demo/cmd/echo-grpc-server/main.go
 
+build-cli: build-echo-grpc-server build-echo-dubbo-server build-echo-consumer
+
 run-echo-consumer: build-echo-consumer
 	CONF_CONSUMER_FILE_PATH=${PWD}/misc/echo-consumer/client.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-consumer/log.yml \
@@ -112,7 +114,7 @@ $(DOCKER_DEMO_TARGETS):
 	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-demo-$(NAME):$(CTR_TAG) -f dockerfiles/Dockerfile.$(NAME) .
 
 .PHONY: docker-build-demo
-docker-build-demo: $(DOCKER_DEMO_TARGETS)
+docker-build-demo: build-cli $(DOCKER_DEMO_TARGETS)
 
 .PHONY: buildx-context
 buildx-context:
@@ -138,59 +140,3 @@ docker-build: docker-build-demo
 docker-build-cross-demo: DOCKER_BUILDX_PLATFORM=darwin/amd64,darwin/arm64,linux/amd64,linux/arm64
 docker-build-cross-demo: docker-build-demo
 docker-build-cross: docker-build-cross-demo
-
-
-.PHONY: build-ci
-build-ci:
-	go build -v ./...
-
-.PHONY: trivy-ci-setup
-trivy-ci-setup:
-	wget https://github.com/aquasecurity/trivy/releases/download/v0.23.0/trivy_0.23.0_Linux-64bit.tar.gz
-	tar zxvf trivy_0.23.0_Linux-64bit.tar.gz
-	echo $$(pwd) >> $(GITHUB_PATH)
-
-# Show all vulnerabilities in logs
-trivy-scan-verbose-%: NAME=$(@:trivy-scan-verbose-%=%)
-trivy-scan-verbose-%:
-	trivy image "$(CTR_REGISTRY)/$(NAME):$(CTR_TAG)"
-
-# Exit if vulnerability exists
-trivy-scan-fail-%: NAME=$(@:trivy-scan-fail-%=%)
-trivy-scan-fail-%:
-	trivy image --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL "$(CTR_REGISTRY)/$(NAME):$(CTR_TAG)"
-
-.PHONY: trivy-scan-images trivy-scan-images-fail trivy-scan-images-verbose
-trivy-scan-images-verbose: $(addprefix trivy-scan-verbose-, $(OSM_TARGETS))
-trivy-scan-images-fail: $(addprefix trivy-scan-fail-, $(OSM_TARGETS))
-trivy-scan-images: trivy-scan-images-verbose trivy-scan-images-fail
-
-.PHONY: shellcheck
-shellcheck:
-	shellcheck -x $(shell find . -name '*.sh')
-
-.PHONY: install-git-pre-push-hook
-install-git-pre-push-hook:
-	./scripts/install-git-pre-push-hook.sh
-
-# -------------------------------------------
-#  release targets below
-# -------------------------------------------
-
-.PHONY: build-cross
-build-cross: cmd/cli/chart.tgz
-	GO111MODULE=on CGO_ENABLED=0 $(GOX) -ldflags $(LDFLAGS) -parallel=5 -output="_dist/{{.OS}}-{{.Arch}}/$(BINNAME)" -osarch='$(TARGETS)' ./cmd/cli
-
-.PHONY: dist
-dist:
-	( \
-		cd _dist && \
-		$(DIST_DIRS) cp ../LICENSE {} \; && \
-		$(DIST_DIRS) cp ../README.md {} \; && \
-		$(DIST_DIRS) tar -zcf osm-edge-${VERSION}-{}.tar.gz {} \; && \
-		$(DIST_DIRS) zip -r osm-edge-${VERSION}-{}.zip {} \; && \
-		$(SHA256) osm-* > sha256sums.txt \
-	)
-
-.PHONY: release-artifacts
-release-artifacts: build-cross dist

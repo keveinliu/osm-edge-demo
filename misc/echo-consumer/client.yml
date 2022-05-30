@@ -12,14 +12,14 @@ application:
   module : "osm-edge echo server by dubbo"
   version : "0.0.1"
   owner : "cybwan"
-  environment : "release"
+  environment : "develop"
 
 
 references:
   "EchoProvider":
     interface : "io.flemsh.osm.Echo.EchoProvider"
     cluster: "failover"
-    url:  "dubbo://127.0.0.1:20002"
+    url:  "dubbo://echo-dubbo-server-v1.echo-dubbo-server.svc.cluster.local:20002"
     methods :
       - name: "GetEcho"
         retries: 3

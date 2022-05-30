@@ -12,8 +12,6 @@ import (
 
 	"time"
 
-	"fmt"
-
 	pb "github.com/cybwan/osm-edge-demo/pkg/api/echo"
 	"github.com/cybwan/osm-edge-demo/pkg/grpc/mid"
 	"github.com/cybwan/osm-edge-demo/pkg/logger"
@@ -61,16 +59,8 @@ func NewServer() *Server {
 func (s *Server) UnaryEcho(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
 	logger.Logger.Infof("req: %#v", req)
 
-	body := "org body"
+	body := req.Message
 	atomic.AddInt64(&s.Connter, 1)
-	if s.Connter%2 == 0 {
-		res, err := s.Cli.R().Get("https://www.baidu.com/")
-		if err != nil {
-			logger.Logger.Warnf("get https://www.baidu.com err:#+v", err)
-		}
-
-		body = fmt.Sprintf("https://www.baidu.com body len:%d", res.Size())
-	}
 	return &pb.EchoResponse{
 		Id:      req.Id,
 		Message: req.Message,

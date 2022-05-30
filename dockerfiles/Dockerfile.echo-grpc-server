@@ -1,0 +1,5 @@
+FROM localhost:5000/flomesh/osm-edge-echo-base:latest
+
+COPY bin/echo-grpc-server /echo-grpc-server
+
+ENTRYPOINT ["/echo-grpc-server", "-grpc-port=20001"]

@@ -5,7 +5,7 @@ application:
   module : "osm-edge echo server by dubbo"
   version : "0.0.1"
   owner : "cybwan"
-  environment : "release"
+  environment : "develop"
 
 services:
   "EchoProvider":
