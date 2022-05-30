@@ -15,33 +15,17 @@ ifeq ($(shell uname),Darwin)
 	SHA256 = shasum -a 256
 endif
 
-VERSION ?= dev
-BUILD_DATE ?=
-GIT_SHA=$$(git rev-parse HEAD)
-BUILD_DATE_VAR := github.com/openservicemesh/osm/pkg/version.BuildDate
-BUILD_VERSION_VAR := github.com/openservicemesh/osm/pkg/version.Version
-BUILD_GITCOMMIT_VAR := github.com/openservicemesh/osm/pkg/version.GitCommit
 DOCKER_GO_VERSION = 1.17
 DOCKER_BUILDX_PLATFORM ?= linux/amd64
-# Value for the --output flag on docker buildx build.
-# https://docs.docker.com/engine/reference/commandline/buildx_build/#output
+
+VERSION ?= v0.0.4
+ROOT := github.com/cybwan/osm-edge-demo
+ARCH  ?= $(shell go env GOARCH)
+BUILD_DATE = $(shell date +'%Y-%m-%dT%H:%M:%SZ')
+COMMIT = $(shell git rev-parse --short HEAD)
+GOENV  := CGO_ENABLED=0 GOOS=$(shell uname -s | tr A-Z a-z) GOARCH=$(ARCH) GOPROXY=https://goproxy.cn,direct
+LDFLAGS ?= -ldflags "-s -w -X $(ROOT)/pkg/version.Release=$(VERSION) -X  $(ROOT)/pkg/version.Commit=$(COMMIT) -X  $(ROOT)/pkg/version.BuildDate=$(BUILD_DATE)"
 DOCKER_BUILDX_OUTPUT ?= type=registry
-
-LDFLAGS ?= "-X $(BUILD_DATE_VAR)=$(BUILD_DATE) -X $(BUILD_VERSION_VAR)=$(VERSION) -X $(BUILD_GITCOMMIT_VAR)=$(GIT_SHA) -s -w"
-
-# These two values are combined and passed to go test
-E2E_FLAGS ?= -installType=KindCluster
-E2E_FLAGS_DEFAULT := -test.v -ginkgo.v -ginkgo.progress -ctrRegistry $(CTR_REGISTRY) -osmImageTag $(CTR_TAG)
-
-# Installed Go version
-# This is the version of Go going to be used to compile this project.
-# It will be compared with the minimum requirements for OSM.
-GO_VERSION_MAJOR = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
-GO_VERSION_MINOR = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
-GO_VERSION_PATCH = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f3)
-ifeq ($(GO_VERSION_PATCH),)
-GO_VERSION_PATCH := 0
-endif
 
 check-env:
 ifndef CTR_REGISTRY
@@ -82,18 +66,30 @@ kind-up:
 kind-reset:
 	kind delete cluster --name osm
 
-local-run-echo-consumer:
+build-echo-consumer:
+	rm -rf bin/echo-consumer
+	go build -v -o bin/echo-consumer ${LDFLAGS} demo/cmd/echo-consumer/main.go
+
+build-echo-dubbo-server:
+	rm -rf bin/echo-dubbo-server
+	go build -v -o bin/echo-dubbo-server ${LDFLAGS} demo/cmd/echo-dubbo-server/main.go
+
+build-echo-grpc-server:
+	rm -rf bin/echo-dubbo-server
+	go build -v -o bin/echo-grpc-server ${LDFLAGS} demo/cmd/echo-grpc-server/main.go
+
+run-echo-consumer: build-echo-consumer
 	CONF_CONSUMER_FILE_PATH=${PWD}/misc/echo-consumer/client.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-consumer/log.yml \
-	go run demo/cmd/echo-consumer/main.go
+	bin/echo-consumer -server=127.0.0.1:20001
 
-local-run-echo-grpc-server:
-	go run demo/cmd/echo-grpc-server/main.go
-
-local-run-echo-dubbo-server:
+run-echo-dubbo-server: build-echo-dubbo-server
 	CONF_PROVIDER_FILE_PATH=${PWD}/misc/echo-dubbo-server/server.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-dubbo-server/log.yml \
-	go run demo/cmd/echo-dubbo-server/main.go
+	bin/echo-dubbo-server
+
+run-echo-grpc-server: build-echo-grpc-server
+	bin/echo-grpc-server
 
 .env:
 	cp .env.example .env
@@ -103,13 +99,17 @@ kind-demo: export CTR_REGISTRY=localhost:5000
 kind-demo: .env kind-up
 	./demo/run-osm-demo.sh
 
+.PHONY: docker-build-echo-base
+docker-build-echo-base:
+	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-echo-base:latest -f dockerfiles/Dockerfile.base .
+
 DEMO_TARGETS = echo-consumer echo-dubbo-server echo-grpc-server
 # docker-build-echo-consumer, etc
 DOCKER_DEMO_TARGETS = $(addprefix docker-build-, $(DEMO_TARGETS))
 .PHONY: $(DOCKER_DEMO_TARGETS)
 $(DOCKER_DEMO_TARGETS): NAME=$(@:docker-build-%=%)
 $(DOCKER_DEMO_TARGETS):
-	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-demo-$(NAME):$(CTR_TAG) -f dockerfiles/Dockerfile.demo --build-arg GO_VERSION=$(DOCKER_GO_VERSION) --build-arg BINARY=$(NAME) .
+	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-demo-$(NAME):$(CTR_TAG) -f dockerfiles/Dockerfile.$(NAME) .
 
 .PHONY: docker-build-demo
 docker-build-demo: $(DOCKER_DEMO_TARGETS)
