@@ -54,7 +54,7 @@ func (u *DownConsumer) DubboEcho(c *gin.Context) {
 	name := c.DefaultQuery("name", "hello")
 
 	logger.Debugf("start to test dubbo get Echo name: %s", name)
-	echo := &model.Echo{}
+	echo := new(model.Echo)
 	err := u.GetEcho(context.TODO(), []interface{}{name}, echo)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
