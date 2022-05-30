@@ -26,7 +26,7 @@ import (
 // 		export APP_LOG_CONF_FILE="xxx"
 func main() {
 	// get configuration
-	address := flag.String("server", "127.0.0.1:8000", "gRPC server in format host:port")
+	address := flag.String("server", "127.0.0.1:20001", "gRPC server in format host:port")
 	flag.Parse()
 
 	// hessian.RegisterPOJO(&model.User{})
