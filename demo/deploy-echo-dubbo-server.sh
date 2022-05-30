@@ -14,92 +14,6 @@ KUBERNETES_NODE_OS="${KUBERNETES_NODE_OS:-linux}"
 
 kubectl delete deployment "$SVC" -n "$ECHO_DUBBO_SERVER_NAMESPACE"  --ignore-not-found
 
-echo -e "Deploy $SVC ConfigMap"
-kubectl apply  -f - <<EOF
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: echo-dubbo-server-config
-  namespace: $ECHO_DUBBO_SERVER_NAMESPACE
-  labels:
-    app: echo-dubbo-server
-data:
-  log.yml: |
-    level: "debug"
-    development: true
-    disableCaller: true
-    disableStacktrace: true
-    sampling:
-    encoding: "console"
-
-    # encoder
-    encoderConfig:
-      messageKey: "message"
-      levelKey: "level"
-      timeKey: "time"
-      nameKey: "logger"
-      callerKey: "caller"
-      stacktraceKey: "stacktrace"
-      lineEnding: ""
-      levelEncoder: "capitalColor"
-      timeEncoder: "iso8601"
-      durationEncoder: "seconds"
-      callerEncoder: "short"
-      nameEncoder: ""
-
-    outputPaths:
-      - "stderr"
-    errorOutputPaths:
-      - "stderr"
-    initialFields:
-  server.yml: |
-    # application config
-    application:
-      organization : "flomesh.io"
-      name : "osm-edge demo"
-      module : "osm-edge echo server by dubbo"
-      version : "0.0.1"
-      owner : "cybwan"
-      environment : "release"
-
-    services:
-      "EchoProvider":
-        protocol : "dubbo"
-        interface : "io.flemsh.osm.Echo.EchoProvider"
-        loadbalance: "random"
-        warmup: "100"
-        cluster: "failover"
-        methods:
-          - name: "GetEcho"
-            retries: 1
-            loadbalance: "random"
-
-    protocols:
-      "dubbo":
-        name: "dubbo"
-        #    ip : "127.0.0.1"
-        port: 20002
-
-    protocol_conf:
-      dubbo:
-        session_number: 700
-        session_timeout: "20s"
-        getty_session_param:
-          compress_encoding: false
-          tcp_no_delay: true
-          tcp_keep_alive: true
-          keep_alive_period: "120s"
-          tcp_r_buf_size: 262144
-          tcp_w_buf_size: 65536
-          pkg_rq_size: 1024
-          pkg_wq_size: 512
-          tcp_read_timeout: "5s"
-          tcp_write_timeout: "5s"
-          wait_timeout: "1s"
-          max_msg_len: 1024
-          session_name: "server"
-EOF
-
 echo -e "Deploy $SVC Service Account"
 kubectl apply -f - <<EOF
 apiVersion: v1
@@ -150,18 +64,10 @@ spec:
       nodeSelector:
         kubernetes.io/arch: ${KUBERNETES_NODE_ARCH}
         kubernetes.io/os: ${KUBERNETES_NODE_OS}
-      volumes:
-        - name: config
-          configMap:
-            name: echo-dubbo-server-config
-            defaultMode: 420
       containers:
         - image: "${CTR_REGISTRY}/osm-edge-demo-echo-dubbo-server:${CTR_TAG}"
           imagePullPolicy: Always
           name: $SVC
-          volumeMounts:
-            - name: config
-              mountPath: "/config"
           ports:
             - containerPort: 14001
               name: web
@@ -169,7 +75,6 @@ spec:
               name: tcp-dubbo
               protocol: TCP
           command: ["/echo-dubbo-server"]
-          args: ["--grpc-port", "20002"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}

@@ -19,19 +19,15 @@ DEPLOY_WITH_SAME_SA="${DEPLOY_WITH_SAME_SA:-false}"
 # Deploy bookstore versions
 if [ "$DEPLOY_WITH_SAME_SA" = "true" ]; then
     ./demo/deploy-bookstore-with-same-sa.sh "v1"
-    ./demo/deploy-bookstore-with-same-sa.sh "v2"
 else
     ./demo/deploy-echo-grpc-server.sh "v1"
-    ./demo/deploy-echo-grpc-server.sh "v2"
 fi
 
 # Deploy bookstore versions
 if [ "$DEPLOY_WITH_SAME_SA" = "true" ]; then
     ./demo/deploy-bookstore-with-same-sa.sh "v1"
-    ./demo/deploy-bookstore-with-same-sa.sh "v2"
 else
     ./demo/deploy-echo-dubbo-server.sh "v1"
-    ./demo/deploy-echo-dubbo-server.sh "v2"
 fi
 
 # Deploy bookbuyer

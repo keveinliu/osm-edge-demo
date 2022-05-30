@@ -77,7 +77,7 @@ spec:
               protocol: TCP
             - containerPort: 8080
               protocol: TCP
-          command: ["/echo-consumer"]
+          command: ["/bin/sleep"]
           args: ["--server", "echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001"]
           env:
             - name: IDENTITY
