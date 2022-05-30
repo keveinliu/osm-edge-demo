@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"errors"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -13,9 +13,6 @@ import (
 	"time"
 
 	pb "github.com/cybwan/osm-edge-demo/pkg/api/echo"
-	"github.com/cybwan/osm-edge-demo/pkg/grpc/mid"
-	"github.com/cybwan/osm-edge-demo/pkg/logger"
-	"github.com/go-resty/resty/v2"
 	"istio.io/pkg/env"
 )
 
@@ -28,48 +25,21 @@ var (
 // server implements EchoServer.
 type Server struct {
 	Connter int64
-	Cli     *resty.Client
 	pb.UnimplementedEchoServer
 }
 
 func NewServer() *Server {
-	// Create a Resty Client
-	client := resty.New()
-
-	// Retries are configured per client
-	client.
-		// Set retry count to non zero to enable retries
-		SetRetryCount(3).
-		// You can override initial retry wait time.
-		// Default is 100 milliseconds.
-		SetRetryWaitTime(5 * time.Second).
-		// MaxWaitTime can be overridden as well.
-		// Default is 2 seconds.
-		SetRetryMaxWaitTime(20 * time.Second).
-		// SetRetryAfter sets callback to calculate wait time between retries.
-		// Default (nil) implies exponential backoff with jitter
-		SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
-			return 0, errors.New("quota exceeded")
-		})
-
-	return &Server{
-		Cli: client,
-	}
+	return new(Server)
 }
 func (s *Server) UnaryEcho(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
-	logger.Logger.Infof("req: %#v", req)
-
-	body := req.Message
 	atomic.AddInt64(&s.Connter, 1)
 	return &pb.EchoResponse{
-		Id:      req.Id,
-		Message: req.Message,
+		Id: req.Id,
 		Meta: map[string]string{
 			"PodName":      PodName.Get(),
 			"PodNamespace": PodNamespace.Get(),
 			"PodIp":        PodIp.Get(),
-			"body":         body,
-			"time":         time.Now().String(),
+			"Time":         time.Now().String(),
 		},
 	}, nil
 }
@@ -84,9 +54,6 @@ func RunServer(ctx context.Context, s pb.EchoServer, port string) error {
 	// gRPC server statup options
 	opts := []grpc.ServerOption{}
 
-	// add middleware
-	opts = mid.AddLogging(logger.Log, opts)
-
 	// register service
 	server := grpc.NewServer(opts...)
 	pb.RegisterEchoServer(server, s)
@@ -97,7 +64,7 @@ func RunServer(ctx context.Context, s pb.EchoServer, port string) error {
 	go func() {
 		for range c {
 			// sig is a ^C, handle it
-			logger.Log.Warn("shutting down gRPC server...")
+			log.Println("shutting down gRPC server...")
 
 			server.GracefulStop()
 
@@ -106,6 +73,6 @@ func RunServer(ctx context.Context, s pb.EchoServer, port string) error {
 	}()
 
 	// start gRPC server
-	logger.Logger.Info("starting gRPC server...")
+	log.Println("starting gRPC server...")
 	return server.Serve(listen)
 }

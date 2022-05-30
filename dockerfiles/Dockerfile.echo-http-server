@@ -1,0 +1,5 @@
+FROM localhost:5000/flomesh/osm-edge-echo-base:latest
+
+COPY bin/echo-http-server /echo-http-server
+
+ENTRYPOINT ["/echo-http-server", "-http-port=20003"]

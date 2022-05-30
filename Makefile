@@ -78,20 +78,27 @@ build-echo-grpc-server:
 	rm -rf bin/echo-dubbo-server
 	go build -v -o bin/echo-grpc-server ${LDFLAGS} demo/cmd/echo-grpc-server/main.go
 
-build-cli: build-echo-grpc-server build-echo-dubbo-server build-echo-consumer
+build-echo-http-server:
+	rm -rf bin/echo-http-server
+	go build -v -o bin/echo-http-server ${LDFLAGS} demo/cmd/echo-http-server/main.go
+
+build-cli: build-echo-grpc-server build-echo-dubbo-server build-echo-http-server build-echo-consumer
 
 run-echo-consumer: build-echo-consumer
 	CONF_CONSUMER_FILE_PATH=${PWD}/misc/echo-consumer/client.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-consumer/log.yml \
-	bin/echo-consumer -server=127.0.0.1:20001
+	bin/echo-consumer grpc_server=127.0.0.1:20001 http_server=127.0.0.1:20003
 
 run-echo-dubbo-server: build-echo-dubbo-server
 	CONF_PROVIDER_FILE_PATH=${PWD}/misc/echo-dubbo-server/server.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-dubbo-server/log.yml \
-	bin/echo-dubbo-server
+	bin/echo-dubbo-server --grpc-port=20001
 
 run-echo-grpc-server: build-echo-grpc-server
-	bin/echo-grpc-server
+	bin/echo-grpc-server --grpc-port=20001
+
+run-echo-http-server: build-echo-http-server
+	bin/echo-http-server --http-port=20003
 
 .env:
 	cp .env.example .env
@@ -105,7 +112,7 @@ kind-demo: .env kind-up
 docker-build-echo-base:
 	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-echo-base:latest -f dockerfiles/Dockerfile.base .
 
-DEMO_TARGETS = echo-consumer echo-dubbo-server echo-grpc-server
+DEMO_TARGETS = echo-consumer echo-dubbo-server echo-grpc-server echo-http-server
 # docker-build-echo-consumer, etc
 DOCKER_DEMO_TARGETS = $(addprefix docker-build-, $(DEMO_TARGETS))
 .PHONY: $(DOCKER_DEMO_TARGETS)

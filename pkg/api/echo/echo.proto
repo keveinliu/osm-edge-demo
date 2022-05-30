@@ -28,15 +28,12 @@ message Time {
 message EchoRequest {
     string id = 1;
     string message = 2;
-    Time time = 3;
 }
 
 // EchoResponse is the response for echo.
 message EchoResponse {
     string id = 1;
-    string message = 2;
-    map<string, string> meta = 3;
-    Time time = 4;
+    map<string, string> meta = 2;
 }
 
 // Echo is the echo service.

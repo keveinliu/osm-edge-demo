@@ -140,6 +140,10 @@ else
       $optionalInstallArgs
 fi
 
+kubectl patch meshconfig osm-mesh-config -n "$K8S_NAMESPACE" \
+  -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}' \
+  --type=merge
+
 ./demo/configure-app-namespaces.sh
 
 ./demo/deploy-apps.sh

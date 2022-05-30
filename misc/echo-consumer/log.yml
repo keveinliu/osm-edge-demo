@@ -1,7 +1,7 @@
-level: "debug"
-development: true
-disableCaller: true
-disableStacktrace: true
+level: "error"
+development: false
+disableCaller: false
+disableStacktrace: false
 sampling:
 encoding: "console"
 

@@ -1,4 +1,4 @@
-level: "debug"
+level: "warn"
 development: true
 disableCaller: true
 disableStacktrace: true

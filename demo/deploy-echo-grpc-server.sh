@@ -69,13 +69,11 @@ spec:
           imagePullPolicy: Always
           name: $SVC
           ports:
-            - containerPort: 14001
-              name: web
             - containerPort: 20001
               name: grpc
               protocol: TCP
           command: ["/echo-grpc-server"]
-          args: ["--grpc-port", "20001"]
+          args: ["-grpc-port", "20001"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}

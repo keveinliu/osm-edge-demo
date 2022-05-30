@@ -2,19 +2,19 @@ package consumer
 
 import (
 	"context"
-	"log"
-	"sync/atomic"
-
-	"net/http"
-
-	"time"
-
+	"encoding/json"
 	"fmt"
+	"github.com/go-resty/resty/v2"
+	"log"
+	"net/http"
+	"sync/atomic"
+	"time"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go/common/logger"
 	"github.com/apache/dubbo-go/config"
 	pb "github.com/cybwan/osm-edge-demo/pkg/api/echo"
+	httpProto "github.com/cybwan/osm-edge-demo/pkg/http"
 	"github.com/cybwan/osm-edge-demo/pkg/model"
 	"github.com/cybwan/osm-edge-demo/pkg/router"
 	"github.com/gin-gonic/gin"
@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	PodName      = env.RegisterStringVar("POD_NAME", "consumer-local-order-xxx", "pod name")
+	PodName      = env.RegisterStringVar("POD_NAME", "consumer-local-xxx", "pod name")
 	PodNamespace = env.RegisterStringVar("POD_NAMESPACE", "admin", "pod namespace")
 	PodIp        = env.RegisterStringVar("POD_IP", "0.0.0.0", "pod ip")
 )
@@ -32,6 +32,7 @@ var (
 var EchoClient = new(EchoConsumer)
 
 func init() {
+	gin.SetMode("release")
 	config.SetConsumerService(EchoClient)
 	hessian.RegisterPOJO(&model.Echo{})
 }
@@ -43,6 +44,7 @@ type EchoConsumer struct {
 type DownConsumer struct {
 	IdCounter int64
 	GrpcCli   pb.EchoClient
+	HttpCli   *resty.Client
 	*EchoConsumer
 }
 
@@ -74,13 +76,21 @@ func (u *DownConsumer) DubboEcho(c *gin.Context) {
 func (u *DownConsumer) HttpEcho(c *gin.Context) {
 	logger.Debugf("start to test http get user")
 	atomic.AddInt64(&u.IdCounter, 1)
+	res, err := u.HttpCli.R().Get("/httpEcho")
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": errors.Wrapf(err, "unexpected error from httpEcho").Error(),
+		})
+		return
+	}
+	echoRes := new(httpProto.EchoResponse)
+	json.Unmarshal(res.Body(), echoRes)
+	atomic.AddInt64(&u.IdCounter, 1)
 	c.IndentedJSON(http.StatusOK, gin.H{
-		"success": true,
-		"Id":      u.IdCounter,
-		"podName": PodName.Get(),
-		"podNs":   PodNamespace.Get(),
-		"podIp":   PodIp.Get(),
-		"Time":    time.Now(),
+		"success":   true,
+		"resultMap": echoRes,
 	})
 }
 
@@ -133,7 +143,7 @@ func (u *DownConsumer) Routes() []*router.Route {
 	return routes
 }
 
-func GrpcInit(addr string) pb.EchoClient {
+func grpcInit(addr string) pb.EchoClient {
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -141,6 +151,28 @@ func GrpcInit(addr string) pb.EchoClient {
 
 	c := pb.NewEchoClient(conn)
 	return c
+}
+
+func httpInit(httpServerAddr string) *resty.Client {
+	// Create a Resty Client
+	client := resty.New()
+	// Retries are configured per client
+	client.
+		// Set retry count to non zero to enable retries
+		SetRetryCount(3).
+		// You can override initial retry wait time.
+		// Default is 100 milliseconds.
+		SetRetryWaitTime(5 * time.Second).
+		// MaxWaitTime can be overridden as well.
+		// Default is 2 seconds.
+		SetRetryMaxWaitTime(20 * time.Second).
+		// SetRetryAfter sets callback to calculate wait time between retries.
+		// Default (nil) implies exponential backoff with jitter
+		SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
+			return 0, errors.New("quota exceeded")
+		}).
+		SetBaseURL(fmt.Sprintf("http://%s", httpServerAddr))
+	return client
 }
 
 // DefaultHealhRoutes ...
@@ -173,11 +205,11 @@ func GinInit() *router.Router {
 }
 
 //
-func HttpInit(addr string) *router.Router {
+func GRPCInit(grpcServerAddr, httpServerAddr string) *router.Router {
 	cli := &DownConsumer{
 		EchoConsumer: EchoClient,
 	}
-	cli.GrpcCli = GrpcInit(addr)
+	cli.GrpcCli = grpcInit(grpcServerAddr)
 	rt := router.NewRouter(&router.Options{
 		Addr:           ":8090",
 		GinLogEnabled:  true,
@@ -187,5 +219,7 @@ func HttpInit(addr string) *router.Router {
 
 	rt.AddRoutes("index", rt.DefaultRoutes())
 	rt.AddRoutes("user", cli.Routes())
+
+	cli.HttpCli = httpInit(httpServerAddr)
 	return rt
 }

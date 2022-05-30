@@ -24,16 +24,22 @@ import (
 // they are necessary:
 // 		export CONF_CONSUMER_FILE_PATH="xxx"
 // 		export APP_LOG_CONF_FILE="xxx"
+
+// Config is configuration for Server
+type Config struct {
+	grpcServerAddr string
+	httpServerAddr string
+}
+
 func main() {
-	// get configuration
-	address := flag.String("server", "127.0.0.1:20001", "gRPC server in format host:port")
+	var cfg Config
+	flag.StringVar(&cfg.grpcServerAddr, "grpc_server", "127.0.0.1:20001", "gRPC server in format host:port")
+	flag.StringVar(&cfg.httpServerAddr, "http_server", "127.0.0.1:20003", "HTTP server in format host:port")
 	flag.Parse()
 
-	// hessian.RegisterPOJO(&model.User{})
-	// hessian.RegisterPOJO(&model.Order{})
 	config.Load()
 	g := consumer.GinInit()
-	r := consumer.HttpInit(*address)
+	r := consumer.GRPCInit(cfg.grpcServerAddr, cfg.httpServerAddr)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	go g.StartWarp(ctx.Done())

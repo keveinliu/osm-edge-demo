@@ -78,7 +78,7 @@ spec:
             - containerPort: 8080
               protocol: TCP
           command: ["/echo-consumer"]
-          args: ["-server", "echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001"]
+          args: ["--grpc_server=echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001", "--http_server=echo-http-server-v1.echo-http-server.svc.cluster.local:20003"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}

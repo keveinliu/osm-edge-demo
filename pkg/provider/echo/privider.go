@@ -2,7 +2,6 @@ package order
 
 import (
 	"context"
-	"log"
 	"sync/atomic"
 	"time"
 
@@ -33,38 +32,21 @@ func NewProvider() *EchoProvider {
 	return &EchoProvider{
 		Cache: make(map[string]*model.Echo),
 		Default: &model.Echo{
-			Id:           1,
-			Type:         "local",
-			Name:         "hello",
-			PodName:      PodName.Get(),
-			PodNamespace: PodNamespace.Get(),
-			PodIp:        PodIp.Get(),
-			Time:         time.Now(),
+			Id: 1,
+			Meta: map[string]string{
+				"PodIp":        PodIp.Get(),
+				"PodName":      PodName.Get(),
+				"PodNamespace": PodNamespace.Get(),
+				"Time":         time.Now().String(),
+			},
 		},
 	}
 }
 
 func (o *EchoProvider) GetEcho(ctx context.Context, req []interface{}) (*model.Echo, error) {
-	log.Printf("req :%#v", req)
-	var echo *model.Echo
-	for _, item := range req {
-		if _name, ok := item.(string); ok {
-			log.Printf("parse name: %s", _name)
-			if _tmp, ok := o.Cache[_name]; ok {
-				echo = _tmp
-				break
-			}
-		}
-	}
-
-	if echo == nil {
-		log.Printf("use delault echo")
-		echo = o.Default
-	}
-
-	echo.Time = time.Now()
-	log.Printf("echo:%#v", echo)
+	echo := o.Default
 	atomic.AddInt64(&echo.Id, 1)
+	echo.Meta["Time"] = time.Now().String()
 	return echo, nil
 }
 
