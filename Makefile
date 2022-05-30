@@ -54,10 +54,6 @@ go-lint: embed-files-test
 go-fmt:
 	go fmt ./...
 
-.PHONY: go-mod-tidy
-go-mod-tidy:
-	./scripts/go-mod-tidy.sh
-
 .PHONY: kind-up
 kind-up:
 	./scripts/kind-with-registry.sh
@@ -66,9 +62,17 @@ kind-up:
 kind-reset:
 	kind delete cluster --name osm
 
-build-echo-consumer:
-	rm -rf bin/echo-consumer
-	go build -v -o bin/echo-consumer ${LDFLAGS} demo/cmd/echo-consumer/main.go
+build-echo-dubbo-consumer:
+	rm -rf bin/echo-dubbo-consumer
+	go build -v -o bin/echo-dubbo-consumer ${LDFLAGS} demo/cmd/echo-dubbo-consumer/main.go
+
+build-echo-grpc-consumer:
+	rm -rf bin/echo-grpc-consumer
+	go build -v -o bin/echo-grpc-consumer ${LDFLAGS} demo/cmd/echo-grpc-consumer/main.go
+
+build-echo-http-consumer:
+	rm -rf bin/echo-http-consumer
+	go build -v -o bin/echo-http-consumer ${LDFLAGS} demo/cmd/echo-http-consumer/main.go
 
 build-echo-dubbo-server:
 	rm -rf bin/echo-dubbo-server
@@ -82,23 +86,29 @@ build-echo-http-server:
 	rm -rf bin/echo-http-server
 	go build -v -o bin/echo-http-server ${LDFLAGS} demo/cmd/echo-http-server/main.go
 
-build-cli: build-echo-grpc-server build-echo-dubbo-server build-echo-http-server build-echo-consumer
+build-cli: build-echo-grpc-server build-echo-dubbo-server build-echo-http-server build-echo-dubbo-consumer build-echo-grpc-consumer  build-echo-http-consumer
 
-run-echo-consumer: build-echo-consumer
-	CONF_CONSUMER_FILE_PATH=${PWD}/misc/echo-consumer/client.yml \
-	APP_LOG_CONF_FILE=${PWD}/misc/echo-consumer/log.yml \
-	bin/echo-consumer grpc_server=127.0.0.1:20001 http_server=127.0.0.1:20003
+run-echo-dubbo-consumer: build-echo-dubbo-consumer
+	CONF_CONSUMER_FILE_PATH=${PWD}/misc/echo-dubbo-consumer/client.yml \
+	APP_LOG_CONF_FILE=${PWD}/misc/echo-dubbo-consumer/log.yml \
+	bin/echo-dubbo-consumer
+
+run-echo-grpc-consumer: build-echo-grpc-consumer
+	bin/echo-grpc-consumer grpc-server=127.0.0.1:20001
+
+run-echo-http-consumer: build-echo-http-consumer
+	bin/echo-http-consumer http-server=127.0.0.1:20003
 
 run-echo-dubbo-server: build-echo-dubbo-server
 	CONF_PROVIDER_FILE_PATH=${PWD}/misc/echo-dubbo-server/server.yml \
 	APP_LOG_CONF_FILE=${PWD}/misc/echo-dubbo-server/log.yml \
-	bin/echo-dubbo-server --grpc-port=20001
+	bin/echo-dubbo-server
 
 run-echo-grpc-server: build-echo-grpc-server
-	bin/echo-grpc-server --grpc-port=20001
+	bin/echo-grpc-server grpc-port=20001
 
 run-echo-http-server: build-echo-http-server
-	bin/echo-http-server --http-port=20003
+	bin/echo-http-server http-port=20003
 
 .env:
 	cp .env.example .env
@@ -112,7 +122,7 @@ kind-demo: .env kind-up
 docker-build-echo-base:
 	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-echo-base:latest -f dockerfiles/Dockerfile.base .
 
-DEMO_TARGETS = echo-consumer echo-dubbo-server echo-grpc-server echo-http-server
+DEMO_TARGETS = echo-dubbo-consumer echo-grpc-consumer echo-http-consumer echo-dubbo-server echo-grpc-server echo-http-server
 # docker-build-echo-consumer, etc
 DOCKER_DEMO_TARGETS = $(addprefix docker-build-, $(DEMO_TARGETS))
 .PHONY: $(DOCKER_DEMO_TARGETS)

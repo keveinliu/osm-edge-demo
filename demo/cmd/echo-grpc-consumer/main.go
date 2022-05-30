@@ -8,38 +8,25 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/apache/dubbo-go/cluster/cluster_impl"
-	_ "github.com/apache/dubbo-go/cluster/loadbalance"
 	"github.com/apache/dubbo-go/common/logger"
-	_ "github.com/apache/dubbo-go/common/proxy/proxy_factory"
 	"github.com/apache/dubbo-go/config"
-	_ "github.com/apache/dubbo-go/filter/filter_impl"
-	_ "github.com/apache/dubbo-go/protocol/dubbo"
-	_ "github.com/apache/dubbo-go/registry/protocol"
-	_ "github.com/apache/dubbo-go/registry/zookeeper"
 
-	"github.com/cybwan/osm-edge-demo/pkg/consumer"
+	consumer "github.com/cybwan/osm-edge-demo/pkg/consumer/grpc"
 )
-
-// they are necessary:
-// 		export CONF_CONSUMER_FILE_PATH="xxx"
-// 		export APP_LOG_CONF_FILE="xxx"
 
 // Config is configuration for Server
 type Config struct {
 	grpcServerAddr string
-	httpServerAddr string
 }
 
 func main() {
 	var cfg Config
-	flag.StringVar(&cfg.grpcServerAddr, "grpc_server", "127.0.0.1:20001", "gRPC server in format host:port")
-	flag.StringVar(&cfg.httpServerAddr, "http_server", "127.0.0.1:20003", "HTTP server in format host:port")
+	flag.StringVar(&cfg.grpcServerAddr, "grpc-server", "127.0.0.1:20001", "gRPC server in format host:port")
 	flag.Parse()
 
 	config.Load()
 	g := consumer.GinInit()
-	r := consumer.GRPCInit(cfg.grpcServerAddr, cfg.httpServerAddr)
+	r := consumer.CliInit(cfg.grpcServerAddr)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	go g.StartWarp(ctx.Done())

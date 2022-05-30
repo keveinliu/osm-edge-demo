@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/cybwan/osm-edge-demo/pkg/http"
+	"github.com/cybwan/osm-edge-demo/pkg/server/http"
 	"log"
 )
 

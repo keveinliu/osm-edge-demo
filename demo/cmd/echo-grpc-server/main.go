@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/cybwan/osm-edge-demo/pkg/grpc"
+	"github.com/cybwan/osm-edge-demo/pkg/server/grpc"
 )
 
 // Config is configuration for Server

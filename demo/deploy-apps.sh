@@ -13,4 +13,8 @@ DEPLOY_WITH_SAME_SA="${DEPLOY_WITH_SAME_SA:-false}"
 
 ./demo/deploy-echo-dubbo-server.sh "v1"
 
-./demo/deploy-echo-consume.sh "v1"
+./demo/deploy-echo-http-consumer.sh "v1"
+
+./demo/deploy-echo-grpc-consumer.sh "v1"
+
+./demo/deploy-echo-dubbo-consumer.sh "v1"

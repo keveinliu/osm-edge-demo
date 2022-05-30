@@ -16,7 +16,9 @@ source .env
 # Set meaningful defaults for env vars we expect from .env
 MESH_NAME="${MESH_NAME:-osm}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-osm-system}"
-ECHO_CONSUMER_NAMESPACE="${ECHO_CONSUMER_NAMESPACE:-echo-consumer}"
+ECHO_DUBBO_CONSUMER_NAMESPACE="${ECHO_DUBBO_CONSUMER_NAMESPACE:-echo-dubbo-consumer}"
+ECHO_GRPC_CONSUMER_NAMESPACE="${ECHO_GRPC_CONSUMER_NAMESPACE:-echo-grpc-consumer}"
+ECHO_HTTP_CONSUMER_NAMESPACE="${ECHO_HTTP_CONSUMER_NAMESPACE:-echo-http-consumer}"
 ECHO_DUBBO_SERVER_NAMESPACE="${ECHO_DUBBO_SERVER_NAMESPACE:-echo-dubbo-server}"
 ECHO_GRPC_SERVER_NAMESPACE="${ECHO_GRPC_SERVER_NAMESPACE:-echo-grpc-server}"
 ECHO_HTTP_SERVER_NAMESPACE="${ECHO_HTTP_SERVER_NAMESPACE:-echo-http-server}"
@@ -147,20 +149,3 @@ kubectl patch meshconfig osm-mesh-config -n "$K8S_NAMESPACE" \
 ./demo/configure-app-namespaces.sh
 
 ./demo/deploy-apps.sh
-
-## Apply SMI policies
-#if [ "$DEPLOY_TRAFFIC_SPLIT" = "true" ]; then
-#    ./demo/deploy-traffic-split.sh
-#fi
-#
-#./demo/deploy-traffic-specs.sh
-#
-#if [ "$DEPLOY_WITH_SAME_SA" = "true" ]; then
-#    ./demo/deploy-traffic-target-with-same-sa.sh
-#else
-#    ./demo/deploy-traffic-target.sh
-#fi
-#
-#if [[ "$CI" != "true" ]]; then
-#    watch -n5 "printf \"Namespace ${K8S_NAMESPACE}:\n\"; kubectl get pods -n ${K8S_NAMESPACE} -o wide; printf \"\n\n\"; printf \"Namespace ${BOOKBUYER_NAMESPACE}:\n\"; kubectl get pods -n ${BOOKBUYER_NAMESPACE} -o wide; printf \"\n\n\"; printf \"Namespace ${BOOKSTORE_NAMESPACE}:\n\"; kubectl get pods -n ${BOOKSTORE_NAMESPACE} -o wide; printf \"\n\n\"; printf \"Namespace ${BOOKTHIEF_NAMESPACE}:\n\"; kubectl get pods -n ${BOOKTHIEF_NAMESPACE} -o wide; printf \"\n\n\"; printf \"Namespace ${BOOKWAREHOUSE_NAMESPACE}:\n\"; kubectl get pods -n ${BOOKWAREHOUSE_NAMESPACE} -o wide"
-#fi

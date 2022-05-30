@@ -1,4 +1,0 @@
-FROM localhost:5000/flomesh/osm-edge-echo-base:latest
-
-COPY bin/echo-consumer /echo-consumer
-COPY misc/echo-consumer /config

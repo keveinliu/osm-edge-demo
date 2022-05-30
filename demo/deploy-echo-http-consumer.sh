@@ -5,14 +5,14 @@ set -aueo pipefail
 # shellcheck disable=SC1091
 source .env
 VERSION=${1:-v1}
-SVC="echo-consumer-$VERSION"
+SVC="echo-http-consumer-$VERSION"
 USE_PRIVATE_REGISTRY="${USE_PRIVATE_REGISTRY:-true}"
 KUBE_CONTEXT=$(kubectl config current-context)
 ENABLE_MULTICLUSTER="${ENABLE_MULTICLUSTER:-false}"
 KUBERNETES_NODE_ARCH="${KUBERNETES_NODE_ARCH:-amd64}"
 KUBERNETES_NODE_OS="${KUBERNETES_NODE_OS:-linux}"
 
-kubectl delete deployment "$SVC" -n "$ECHO_CONSUMER_NAMESPACE"  --ignore-not-found
+kubectl delete deployment "$SVC" -n "$ECHO_HTTP_CONSUMER_NAMESPACE"  --ignore-not-found
 
 echo -e "Deploy $SVC Service Account"
 kubectl apply -f - <<EOF
@@ -20,7 +20,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: "$SVC"
-  namespace: $ECHO_CONSUMER_NAMESPACE
+  namespace: $ECHO_HTTP_CONSUMER_NAMESPACE
 EOF
 
 echo -e "Deploy $SVC Service"
@@ -29,9 +29,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: $SVC
-  namespace: $ECHO_CONSUMER_NAMESPACE
+  namespace: $ECHO_HTTP_CONSUMER_NAMESPACE
   labels:
-    app: echo-consumer
+    app: echo-http-consumer
 spec:
   ports:
   - port: 8090
@@ -50,7 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: $SVC
-  namespace: $ECHO_CONSUMER_NAMESPACE
+  namespace: $ECHO_HTTP_CONSUMER_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -68,7 +68,7 @@ spec:
         kubernetes.io/arch: ${KUBERNETES_NODE_ARCH}
         kubernetes.io/os: ${KUBERNETES_NODE_OS}
       containers:
-        - image: "${CTR_REGISTRY}/osm-edge-demo-echo-consumer:${CTR_TAG}"
+        - image: "${CTR_REGISTRY}/osm-edge-demo-echo-http-consumer:${CTR_TAG}"
           imagePullPolicy: Always
           name: $SVC
           ports:
@@ -77,8 +77,8 @@ spec:
               protocol: TCP
             - containerPort: 8080
               protocol: TCP
-          command: ["/echo-consumer"]
-          args: ["--grpc_server=echo-grpc-server-v1.echo-grpc-server.svc.cluster.local:20001", "--http_server=echo-http-server-v1.echo-http-server.svc.cluster.local:20003"]
+          command: ["/echo-http-consumer"]
+          args: ["--http-server=echo-http-server-v1.echo-http-server.svc.cluster.local:20003"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}
@@ -104,18 +104,14 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: spec.serviceAccountName
-            - name: APP_LOG_CONF_FILE
-              value: "/config/log.yml"
-            - name: CONF_CONSUMER_FILE_PATH
-              value: "/config/client.yml"
       imagePullSecrets:
         - name: $CTR_REGISTRY_CREDS_NAME
 EOF
 
-kubectl get pods      --no-headers -o wide --selector app="$SVC" -n "$ECHO_CONSUMER_NAMESPACE"
-kubectl get endpoints --no-headers -o wide --selector app="$SVC" -n "$ECHO_CONSUMER_NAMESPACE"
-kubectl get service                -o wide                       -n "$ECHO_CONSUMER_NAMESPACE"
+kubectl get pods      --no-headers -o wide --selector app="$SVC" -n "$ECHO_HTTP_CONSUMER_NAMESPACE"
+kubectl get endpoints --no-headers -o wide --selector app="$SVC" -n "$ECHO_HTTP_CONSUMER_NAMESPACE"
+kubectl get service                -o wide                       -n "$ECHO_HTTP_CONSUMER_NAMESPACE"
 
-for x in $(kubectl get service -n "$ECHO_CONSUMER_NAMESPACE" --selector app="$SVC" --no-headers | awk '{print $1}'); do
-    kubectl get service "$x" -n "$ECHO_CONSUMER_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
+for x in $(kubectl get service -n "$ECHO_HTTP_CONSUMER_NAMESPACE" --selector app="$SVC" --no-headers | awk '{print $1}'); do
+    kubectl get service "$x" -n "$ECHO_HTTP_CONSUMER_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
 done

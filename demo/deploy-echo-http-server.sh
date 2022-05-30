@@ -73,7 +73,7 @@ spec:
               name: http
               protocol: TCP
           command: ["/echo-http-server"]
-          args: ["-http-port", "20003"]
+          args: ["http-port", "20003"]
           env:
             - name: IDENTITY
               value: ${SVC}.${KUBE_CONTEXT}
