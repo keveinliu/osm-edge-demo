@@ -1,0 +1,92 @@
+#!/bin/bash
+
+set -aueo pipefail
+
+# shellcheck disable=SC1091
+source .env
+VERSION=${1:-v1}
+SVC="echo-grpc-server-$VERSION"
+USE_PRIVATE_REGISTRY="${USE_PRIVATE_REGISTRY:-true}"
+KUBE_CONTEXT=$(kubectl config current-context)
+ENABLE_MULTICLUSTER="${ENABLE_MULTICLUSTER:-false}"
+KUBERNETES_NODE_ARCH="${KUBERNETES_NODE_ARCH:-amd64}"
+KUBERNETES_NODE_OS="${KUBERNETES_NODE_OS:-linux}"
+
+kubectl delete deployment "$SVC" -n "$ECHO_GRPC_SERVER_NAMESPACE"  --ignore-not-found
+
+echo -e "Deploy $SVC Service Account"
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "$SVC"
+  namespace: $ECHO_GRPC_SERVER_NAMESPACE
+EOF
+
+echo -e "Deploy $SVC Service"
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: $SVC
+  namespace: $ECHO_GRPC_SERVER_NAMESPACE
+  labels:
+    app: $SVC
+spec:
+  ports:
+  - port: 20001
+    name: grpc-port
+    appProtocol: tcp
+  selector:
+    app: $SVC
+EOF
+
+echo -e "Deploy $SVC Deployment"
+kubectl apply -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $SVC
+  namespace: $ECHO_GRPC_SERVER_NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: $SVC
+      version: $VERSION
+  template:
+    metadata:
+      labels:
+        app: $SVC
+        version: $VERSION
+    spec:
+      serviceAccountName: "$SVC"
+      nodeSelector:
+        kubernetes.io/arch: ${KUBERNETES_NODE_ARCH}
+        kubernetes.io/os: ${KUBERNETES_NODE_OS}
+      containers:
+        - image: "${CTR_REGISTRY}/osm-edge-demo-echo-grpc-server:${CTR_TAG}"
+          imagePullPolicy: Always
+          name: $SVC
+          ports:
+            - containerPort: 14001
+              name: web
+            - containerPort: 20001
+              name: grpc
+              protocol: TCP
+          command: ["/echo-grpc-server"]
+          args: ["--grpc-port", "20001"]
+          env:
+            - name: IDENTITY
+              value: ${SVC}.${KUBE_CONTEXT}
+      imagePullSecrets:
+        - name: $CTR_REGISTRY_CREDS_NAME
+EOF
+
+kubectl get pods      --no-headers -o wide --selector app="$SVC" -n "$ECHO_GRPC_SERVER_NAMESPACE"
+kubectl get endpoints --no-headers -o wide --selector app="$SVC" -n "$ECHO_GRPC_SERVER_NAMESPACE"
+kubectl get service                -o wide                       -n "$ECHO_GRPC_SERVER_NAMESPACE"
+
+for x in $(kubectl get service -n "$ECHO_GRPC_SERVER_NAMESPACE" --selector app="$SVC" --no-headers | awk '{print $1}'); do
+    kubectl get service "$x" -n "$ECHO_GRPC_SERVER_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
+done
