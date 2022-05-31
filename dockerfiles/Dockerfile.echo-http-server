@@ -1,3 +1,16 @@
+ARG GO_VERSION
+FROM --platform=$BUILDPLATFORM golang:$GO_VERSION AS builder
+ARG LDFLAGS
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /osm-edge
+COPY . .
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -v -o echo-http-server -ldflags "$LDFLAGS" ./demo/cmd/echo-http-server
+
 FROM flomesh/osm-edge-echo-base:latest
 
-COPY bin/echo-http-server /echo-http-server
+COPY --from=builder /osm-edge/echo-http-server /echo-http-server

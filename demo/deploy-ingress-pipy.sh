@@ -4,7 +4,7 @@ set -aueo pipefail
 
 # shellcheck disable=SC1091
 source .env
-MESH_NAME="${MESH_NAME:-osm}"
+MESH_NAME="${MESH_NAME:-osm-edge}"
 INGRESS_PIPY_NAMESPACE="${INGRESS_PIPY_NAMESPACE:-flomesh}"
 PIPY_INGRESS_SERVICE=${PIPY_INGRESS_SERVICE:-ingress-pipy-controller}
 ECHO_CONSUMER_NAMESPACE="${ECHO_CONSUMER_NAMESPACE:-echo-consumer}"

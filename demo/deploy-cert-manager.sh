@@ -24,7 +24,7 @@ spec:
   isCA: true
   duration: 2160h # 90d
   secretName: osm-ca-bundle
-  commonName: osm-system
+  commonName: osm-edge-system
   issuerRef:
     name: selfsigned
     kind: Issuer

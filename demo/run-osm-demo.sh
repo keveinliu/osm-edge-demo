@@ -14,8 +14,8 @@ fi
 source .env
 
 # Set meaningful defaults for env vars we expect from .env
-MESH_NAME="${MESH_NAME:-osm}"
-K8S_NAMESPACE="${K8S_NAMESPACE:-osm-system}"
+MESH_NAME="${MESH_NAME:-osm-edge}"
+K8S_NAMESPACE="${K8S_NAMESPACE:-osm-edge-system}"
 INGRESS_PIPY_NAMESPACE="${INGRESS_PIPY_NAMESPACE:-flomesh}"
 ECHO_CONSUMER_NAMESPACE="${ECHO_CONSUMER_NAMESPACE:-echo-consumer}"
 ECHO_DUBBO_SERVER_NAMESPACE="${ECHO_DUBBO_SERVER_NAMESPACE:-echo-dubbo-server}"
@@ -37,7 +37,8 @@ ENABLE_FLUENTBIT="${ENABLE_FLUENTBIT:-false}"
 DEPLOY_PROMETHEUS="${DEPLOY_PROMETHEUS:-false}"
 SIDECAR_LOG_LEVEL="${SIDECAR_LOG_LEVEL:-debug}"
 USE_PRIVATE_REGISTRY="${USE_PRIVATE_REGISTRY:-true}"
-PUBLISH_IMAGES="${PUBLISH_IMAGES:-true}"
+PUBLISH_IMAGES="${PUBLISH_IMAGES:-false}"
+TIMEOUT="${TIMEOUT:-300s}"
 
 # For any additional installation arguments. Used heavily in CI.
 optionalInstallArgs=$*

@@ -1,4 +1,17 @@
+ARG GO_VERSION
+FROM --platform=$BUILDPLATFORM golang:$GO_VERSION AS builder
+ARG LDFLAGS
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /osm-edge
+COPY . .
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -v -o echo-dubbo-server -ldflags "$LDFLAGS" ./demo/cmd/echo-dubbo-server
+
 FROM flomesh/osm-edge-echo-base:latest
 
-COPY bin/echo-dubbo-server /echo-dubbo-server
+COPY --from=builder /osm-edge/echo-dubbo-server /echo-dubbo-server
 COPY misc/echo-dubbo-server /config
