@@ -14,9 +14,11 @@ cd osm-edge-demo
 
 ```
 make .env
-#调整变量K8S_INGRESS_NODE，指定要部署ingress的node
+#调整变量
 vi .env
-export K8S_INGRESS_NODE=osm-worker (需要调整)
+export K8S_INGRESS_NODE=osm-worker   #指定为要部署ingress的node
+export CTR_REGISTRY_USERNAME=flomesh #按需设定
+export CTR_REGISTRY_PASSWORD=flomesh #按需设定
 ```
 
 ## demo部署
@@ -39,5 +41,11 @@ export K8S_INGRESS_NODE=osm-worker (需要调整)
 curl -i http://127.0.0.1:80/httpEcho
 curl -i http://127.0.0.1:80/grpcEcho
 curl -i http://127.0.0.1:80/dubboEcho
+```
+
+## 卸载
+
+```
+./demo/clean-kubernetes.sh
 ```
 
