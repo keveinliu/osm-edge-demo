@@ -16,9 +16,8 @@ source .env
 # Set meaningful defaults for env vars we expect from .env
 MESH_NAME="${MESH_NAME:-osm}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-osm-system}"
-ECHO_DUBBO_CONSUMER_NAMESPACE="${ECHO_DUBBO_CONSUMER_NAMESPACE:-echo-dubbo-consumer}"
-ECHO_GRPC_CONSUMER_NAMESPACE="${ECHO_GRPC_CONSUMER_NAMESPACE:-echo-grpc-consumer}"
-ECHO_HTTP_CONSUMER_NAMESPACE="${ECHO_HTTP_CONSUMER_NAMESPACE:-echo-http-consumer}"
+INGRESS_PIPY_NAMESPACE="${INGRESS_PIPY_NAMESPACE:-flomesh}"
+ECHO_CONSUMER_NAMESPACE="${ECHO_CONSUMER_NAMESPACE:-echo-consumer}"
 ECHO_DUBBO_SERVER_NAMESPACE="${ECHO_DUBBO_SERVER_NAMESPACE:-echo-dubbo-server}"
 ECHO_GRPC_SERVER_NAMESPACE="${ECHO_GRPC_SERVER_NAMESPACE:-echo-grpc-server}"
 ECHO_HTTP_SERVER_NAMESPACE="${ECHO_HTTP_SERVER_NAMESPACE:-echo-http-server}"
@@ -142,9 +141,7 @@ else
       $optionalInstallArgs
 fi
 
-kubectl patch meshconfig osm-mesh-config -n "$K8S_NAMESPACE" \
-  -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}' \
-  --type=merge
+./scripts/mesh-enable-permissive-traffic-mode.sh
 
 ./demo/configure-app-namespaces.sh
 

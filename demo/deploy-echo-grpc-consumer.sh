@@ -12,7 +12,7 @@ ENABLE_MULTICLUSTER="${ENABLE_MULTICLUSTER:-false}"
 KUBERNETES_NODE_ARCH="${KUBERNETES_NODE_ARCH:-amd64}"
 KUBERNETES_NODE_OS="${KUBERNETES_NODE_OS:-linux}"
 
-kubectl delete deployment "$SVC" -n "$ECHO_GRPC_CONSUMER_NAMESPACE"  --ignore-not-found
+kubectl delete deployment "$SVC" -n "$ECHO_CONSUMER_NAMESPACE"  --ignore-not-found
 
 echo -e "Deploy $SVC Service Account"
 kubectl apply -f - <<EOF
@@ -20,7 +20,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: "$SVC"
-  namespace: $ECHO_GRPC_CONSUMER_NAMESPACE
+  namespace: $ECHO_CONSUMER_NAMESPACE
 EOF
 
 echo -e "Deploy $SVC Service"
@@ -29,7 +29,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: $SVC
-  namespace: $ECHO_GRPC_CONSUMER_NAMESPACE
+  namespace: $ECHO_CONSUMER_NAMESPACE
   labels:
     app: echo-grpc-consumer
 spec:
@@ -50,7 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: $SVC
-  namespace: $ECHO_GRPC_CONSUMER_NAMESPACE
+  namespace: $ECHO_CONSUMER_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -108,10 +108,10 @@ spec:
         - name: $CTR_REGISTRY_CREDS_NAME
 EOF
 
-kubectl get pods      --no-headers -o wide --selector app="$SVC" -n "$ECHO_GRPC_CONSUMER_NAMESPACE"
-kubectl get endpoints --no-headers -o wide --selector app="$SVC" -n "$ECHO_GRPC_CONSUMER_NAMESPACE"
-kubectl get service                -o wide                       -n "$ECHO_GRPC_CONSUMER_NAMESPACE"
+kubectl get pods      --no-headers -o wide --selector app="$SVC" -n "$ECHO_CONSUMER_NAMESPACE"
+kubectl get endpoints --no-headers -o wide --selector app="$SVC" -n "$ECHO_CONSUMER_NAMESPACE"
+kubectl get service                -o wide                       -n "$ECHO_CONSUMER_NAMESPACE"
 
-for x in $(kubectl get service -n "$ECHO_GRPC_CONSUMER_NAMESPACE" --selector app="$SVC" --no-headers | awk '{print $1}'); do
-    kubectl get service "$x" -n "$ECHO_GRPC_CONSUMER_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
+for x in $(kubectl get service -n "$ECHO_CONSUMER_NAMESPACE" --selector app="$SVC" --no-headers | awk '{print $1}'); do
+    kubectl get service "$x" -n "$ECHO_CONSUMER_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[*].ip}'
 done
