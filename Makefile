@@ -119,7 +119,7 @@ kind-demo: .env kind-up
 	./demo/run-osm-demo.sh
 
 .PHONY: docker-build-echo-base
-docker-build-echo-base: DOCKER_BUILDX_PLATFORM=darwin/amd64,darwin/arm64,linux/amd64,linux/arm64
+docker-build-echo-base: DOCKER_BUILDX_PLATFORM=linux/amd64,linux/arm64
 docker-build-echo-base:
 	docker buildx build --builder osm --platform=$(DOCKER_BUILDX_PLATFORM) -o $(DOCKER_BUILDX_OUTPUT) -t $(CTR_REGISTRY)/osm-edge-echo-base:latest -f dockerfiles/Dockerfile.base .
 
@@ -155,6 +155,6 @@ docker-digests: $(addprefix docker-digest-, $(DEMO_TARGETS))
 docker-build: docker-build-demo
 
 .PHONY: docker-build-cross-demo docker-build-cross
-docker-build-cross-demo: DOCKER_BUILDX_PLATFORM=darwin/amd64,darwin/arm64,linux/amd64,linux/arm64
+docker-build-cross-demo: DOCKER_BUILDX_PLATFORM=linux/amd64,linux/arm64
 docker-build-cross-demo: docker-build-demo
 docker-build-cross: docker-build-cross-demo
