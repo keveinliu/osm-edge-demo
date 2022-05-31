@@ -1,9 +1,24 @@
 # osm-edge-demo
 osm-edge-demo
 
+#安装osm edge cli
+https://github.com/flomesh-io/osm-edge/releases/tag/v1.1.0
 
+git clone https://github.com/cybwan/osm-edge-demo.git
 
+cd osm-edge-demo
+make .env
+#调整变量K8S_INGRESS_NODE，指定要部署ingress的node
+vi .env
+export K8S_INGRESS_NODE=osm-worker (需要调整)
 
+#demo部署
+./demo/run-osm-demo.sh
 
-                      |
--> pipy-echo-ingress -|
+#打开ingress端口转发
+./scripts/port-forward-echo-ingress-pipy.sh
+
+#测试 127.0.0.1为ingress所在node的ip
+curl -i http://127.0.0.1:80/httpEcho
+curl -i http://127.0.0.1:80/grpcEcho
+curl -i http://127.0.0.1:80/dubboEcho
