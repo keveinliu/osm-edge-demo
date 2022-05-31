@@ -1,4 +1,4 @@
-FROM localhost:5000/flomesh/osm-edge-echo-base:latest
+FROM flomesh/osm-edge-echo-base:latest
 
 COPY bin/echo-dubbo-consumer /echo-dubbo-consumer
 COPY misc/echo-dubbo-consumer /config

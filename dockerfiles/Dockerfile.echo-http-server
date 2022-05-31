@@ -1,3 +1,3 @@
-FROM localhost:5000/flomesh/osm-edge-echo-base:latest
+FROM flomesh/osm-edge-echo-base:latest
 
 COPY bin/echo-http-server /echo-http-server
