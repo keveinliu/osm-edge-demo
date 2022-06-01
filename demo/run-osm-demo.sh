@@ -136,6 +136,10 @@ else
       --set=osm.deployPrometheus="$DEPLOY_PROMETHEUS" \
       --set=osm.sidecarLogLevel="$SIDECAR_LOG_LEVEL" \
       --set=osm.controllerLogLevel="trace" \
+      --set=osm.injector.limits.cpu="1"  \
+      --set=osm.injector.limits.memory="1000Mi"  \  
+      --set=osm.injector.requests.cpu="1"   \
+      --set=osm.injector.requests.memory="500Mi"  \
       --timeout="$TIMEOUT" \
       $optionalInstallArgs
 fi
